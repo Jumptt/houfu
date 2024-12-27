@@ -1,13 +1,15 @@
 new_year_resolution_app/
 ├── app.py
 ├── .env
-├── .gitignore
-├── Procfile
+├── venv
 ├── requirements.txt
-├── runtime.txt
+├── fonts/
+│   └── NotoSansJP-VariableFont_wght.ttf
+├── static/
+│   ├── style.css
+│   ├── background.jpg
+│   └── images/
+│       └── （生成された画像がここに保存されます）
 ├── templates/
 │   ├── index.html
 │   └── results.html
-├── static/
-│   └── style.css
-├── venv/  # 仮想環境ディレクトリ（Gitで管理しない）
