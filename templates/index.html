@@ -22,8 +22,20 @@
                 {{ form.gender(class="form-control") }}
             </div>
             <div class="form-group">
+                {{ form.occupation.label(class="form-label") }}
+                {{ form.occupation(class="form-control") }}
+            </div>
+            <div class="form-group">
                 {{ form.hobbies.label(class="form-label") }}
                 {{ form.hobbies(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.health_focus.label(class="form-label") }}
+                {{ form.health_focus(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.values.label(class="form-label") }}
+                {{ form.values(class="form-control") }}
             </div>
             <div class="text-center">
                 {{ form.submit(class="btn btn-primary btn-lg") }}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>利用履歴</title>
+    <!-- BootstrapのCDN -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <!-- カスタムCSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">利用履歴</h1>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>年齢</th>
+                    <th>性別</th>
+                    <th>職業</th>
+                    <th>趣味</th>
+                    <th>健康の関心事</th>
+                    <th>価値観</th>
+                    <th>抱負</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ record.age }}</td>
+                    <td>{{ record.gender }}</td>
+                    <td>{{ record.occupation }}</td>
+                    <td>{{ record.hobbies }}</td>
+                    <td>{{ record.health_focus }}</td>
+                    <td>{{ record.values }}</td>
+                    <td><pre>{{ record.resolutions }}</pre></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="text-center">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">戻る</a>
+        </div>
+    </div>
+</body>
+</html>

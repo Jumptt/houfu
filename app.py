@@ -7,6 +7,15 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField, SelectMultipleField, SubmitField
 from wtforms.validators import DataRequired
 from PIL import Image, ImageDraw, ImageFont
+from flask_migrate import Migrate
+
+# 追加のインポート
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from functools import wraps
+from flask import request, Response
+import os
+
 
 # 環境変数の読み込み
 load_dotenv()
@@ -16,6 +25,27 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 
 # OpenAIクライアントのインスタンスを作成
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# データベースの設定
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///usage_history.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# データベースのインスタンスを作成
+db = SQLAlchemy(app)
+
+# Flask-Migrateのインスタンスを作成
+migrate = Migrate(app, db)
+# データベースモデルの定義
+class UsageHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    age = db.Column(db.String(10), nullable=False)
+    gender = db.Column(db.String(10), nullable=False)
+    hobbies = db.Column(db.String(200), nullable=False)
+    occupation = db.Column(db.String(50), nullable=False)
+    health_focus = db.Column(db.String(200), nullable=False)
+    values = db.Column(db.String(200), nullable=False)
+    resolutions = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 # フォームの定義
 class ProfileForm(FlaskForm):
@@ -33,6 +63,14 @@ class ProfileForm(FlaskForm):
         ('女性', '女性'),
         ('その他', 'その他')
     ], validators=[DataRequired()])
+    occupation = SelectField('職業', choices=[
+        ('学生', '学生'),
+        ('会社員', '会社員'),
+        ('自営業', '自営業'),
+        ('主婦・主夫', '主婦・主夫'),
+        ('退職者', '退職者'),
+        ('その他', 'その他')
+    ], validators=[DataRequired()])
     hobbies = SelectMultipleField('趣味', choices=[
         ('読書', '読書'),
         ('スポーツ', 'スポーツ'),
@@ -45,9 +83,30 @@ class ProfileForm(FlaskForm):
         ('テクノロジー', 'テクノロジー'),
         ('その他', 'その他')
     ])
+    health_focus = SelectMultipleField('健康に関する関心事', choices=[
+        ('フィットネス', 'フィットネス'),
+        ('ダイエット', 'ダイエット'),
+        ('メンタルヘルス', 'メンタルヘルス'),
+        ('睡眠', '睡眠'),
+        ('栄養', '栄養'),
+        ('ストレス管理', 'ストレス管理'),
+        ('その他', 'その他')
+    ])
+    values = SelectMultipleField('大切にしている価値観', choices=[
+        ('家族', '家族'),
+        ('友情', '友情'),
+        ('キャリア', 'キャリア'),
+        ('学習', '学習'),
+        ('創造性', '創造性'),
+        ('健康', '健康'),
+        ('自由', '自由'),
+        ('冒険', '冒険'),
+        ('貢献', '貢献'),
+        ('その他', 'その他')
+    ])
     submit = SubmitField('抱負を生成')
 
-# 抱負を画像として生成する関数
+# 抱負を画像として生成する関数（変更なし）
 def generate_image(resolutions, filename):
     # 画像サイズと背景色の設定
     img_width = 800
@@ -86,6 +145,27 @@ def generate_image(resolutions, filename):
     image_path = os.path.join('static', 'images', filename)
     image.save(image_path)
 
+# 管理者認証の関数（前回の内容から追加）
+def check_auth(username, password):
+    """管理者のユーザー名とパスワードを確認"""
+    return username == 'admin' and password == 'your_password'
+
+def authenticate():
+    """認証が必要な場合のレスポンスを返す"""
+    resp = Response('管理者ページにアクセスするには認証が必要です。\n再度認証情報を入力してください。', 401)
+    resp.headers['WWW-Authenticate'] = 'Basic realm="Login Required"'
+    return resp
+
+def requires_auth(f):
+    """特定のルートに認証を要求するデコレータ"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
 # ルーティング
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -94,10 +174,18 @@ def index():
         # プロフィール情報の取得
         age = form.age.data
         gender = form.gender.data
+        occupation = form.occupation.data
         hobbies = ', '.join(form.hobbies.data) if form.hobbies.data else '特になし'
+        health_focus = ', '.join(form.health_focus.data) if form.health_focus.data else '特になし'
+        values = ', '.join(form.values.data) if form.values.data else '特になし'
 
         # OpenAI APIへのリクエスト
-        prompt = f"あなたは{age}の{gender}です。趣味は{hobbies}。新年の抱負を10個提案してください。抱負だけを通し番号と共に返し、他の出力は一切しないでください。"
+        prompt = f"""あなたは{age}の{gender}で、職業は{occupation}です。
+趣味は{hobbies}。
+健康に関する関心事は{health_focus}。
+あなたが大切にしている価値観は{values}。
+以上の情報をもとに、新年の抱負を10個提案してください。
+抱負だけを通し番号と共に返し、他の出力は一切しないでください。"""
 
         # チャット補完を作成
         response = client.chat.completions.create(
@@ -120,6 +208,19 @@ def index():
         filename = f"resolutions_{uuid.uuid4().hex}.png"
         generate_image(resolutions, filename)
 
+        # 利用履歴をデータベースに保存
+        new_record = UsageHistory(
+            age=age,
+            gender=gender,
+            occupation=occupation,
+            hobbies=hobbies,
+            health_focus=health_focus,
+            values=values,
+            resolutions='\n'.join(resolutions)
+        )
+        db.session.add(new_record)
+        db.session.commit()
+
         return render_template('results.html', resolutions=resolutions, image_filename=filename)
     return render_template('index.html', form=form)
 
@@ -128,5 +229,14 @@ def index():
 def download_image(filename):
     return send_from_directory(os.path.join('static', 'images'), filename, as_attachment=True)
 
+# 利用履歴の表示（管理者用）
+@app.route('/admin/usage_history')
+@requires_auth
+def view_usage_history():
+    records = UsageHistory.query.order_by(UsageHistory.timestamp.desc()).all()
+    return render_template('usage_history.html', records=records)
+
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

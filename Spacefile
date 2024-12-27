@@ -1,0 +1,7 @@
+v: 0
+micros:
+  - name: new-year-resolution-app
+    src: .
+    engine:
+      type: python3.9
+      entrypoint: main.py
