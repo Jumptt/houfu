@@ -86,6 +86,9 @@ class ProfileForm(FlaskForm):
         ('ゲーム', 'ゲーム'),
         ('アート', 'アート'),
         ('テクノロジー', 'テクノロジー'),
+        ('アイドル', 'アイドル'),
+        ('運動', '運動'),
+        ('旅行', '旅行'),
         ('その他', 'その他')
     ])
     health_focus = SelectMultipleField('健康に関する関心事', choices=[
