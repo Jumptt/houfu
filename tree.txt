@@ -1,0 +1,13 @@
+new_year_resolution_app/
+├── app.py
+├── .env
+├── .gitignore
+├── Procfile
+├── requirements.txt
+├── runtime.txt
+├── templates/
+│   ├── index.html
+│   └── results.html
+├── static/
+│   └── style.css
+├── venv/  # 仮想環境ディレクトリ（Gitで管理しない）
