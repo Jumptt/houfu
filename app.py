@@ -21,10 +21,15 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 # OpenAIクライアントのインスタンスを作成
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# もし環境変数が設定されていない場合、エラーを出すことも検討してください
+if not app.config['SECRET_KEY']:
+    raise ValueError("SECRET_KEYが設定されていません。環境変数または設定ファイルを確認してください。")
+
 
 # データベースの設定
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///usage_history.db'
