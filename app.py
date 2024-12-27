@@ -197,7 +197,7 @@ def index():
 
         # チャット補完を作成
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
